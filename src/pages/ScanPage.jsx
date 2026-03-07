@@ -5,6 +5,15 @@ import { Camera, Keyboard, ListChecks } from 'lucide-react';
 import { parseManualIdFromQrText } from '../lib/manualApi';
 import { captureScanDetected } from '../lib/captureApi';
 
+const isNotFoundDecodeError = (err) => String(err?.name || '').includes('NotFoundException');
+
+const orderDevicesForQr = (devices = []) => {
+    const rearRegex = /(back|rear|environment|belakang|traseira|achter|arriere)/i;
+    const rear = devices.filter((device) => rearRegex.test(device?.label || ''));
+    const other = devices.filter((device) => !rearRegex.test(device?.label || ''));
+    return [...rear, ...other];
+};
+
 const ScanPage = () => {
     const navigate = useNavigate();
     const videoRef = useRef(null);
@@ -12,6 +21,7 @@ const ScanPage = () => {
     const [error, setError] = useState('');
     const [isStarting, setIsStarting] = useState(false);
     const [rawValue, setRawValue] = useState('');
+    const [activeCamera, setActiveCamera] = useState('');
 
     useEffect(() => {
         let isActive = true;
@@ -20,29 +30,73 @@ const ScanPage = () => {
             setError('');
             setIsStarting(true);
 
-            try {
-                const codeReader = new BrowserMultiFormatReader();
-                const controls = await codeReader.decodeFromVideoDevice(undefined, videoRef.current, (result, err) => {
-                    if (!isActive) return;
-                    if (result) {
-                        const text = result.getText();
-                        const manualId = parseManualIdFromQrText(text);
-                        if (manualId) {
-                            captureScanDetected({ manualId, qrRawValue: text, source: 'scan' });
-                            controls?.stop();
-                            navigate(`/sop/${encodeURIComponent(manualId)}`);
-                        } else {
-                            setError('QR terdeteksi, tapi format manualId tidak valid.');
-                        }
-                    } else if (err && !String(err?.name || '').includes('NotFoundException')) {
-                        setError('Gagal membaca QR, coba arahkan kamera lebih dekat.');
+            const codeReader = new BrowserMultiFormatReader();
+
+            const handleDecodeResult = (result, err, controls) => {
+                if (!isActive) return;
+                if (result) {
+                    const text = result.getText();
+                    const manualId = parseManualIdFromQrText(text);
+                    if (manualId) {
+                        captureScanDetected({ manualId, qrRawValue: text, source: 'scan' });
+                        controls?.stop();
+                        navigate(`/sop/${encodeURIComponent(manualId)}`);
+                    } else {
+                        setError('QR terdeteksi, tapi format manualId tidak valid.');
                     }
-                });
+                    return;
+                }
+
+                if (err && !isNotFoundDecodeError(err)) {
+                    setError('QR belum terbaca. Coba tingkatkan cahaya atau dekatkan kamera.');
+                }
+            };
+
+            try {
+                const controls = await codeReader.decodeFromConstraints(
+                    {
+                        video: {
+                            facingMode: { ideal: 'environment' },
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        }
+                    },
+                    videoRef.current,
+                    (result, err) => handleDecodeResult(result, err, controlsRef.current)
+                );
+
                 controlsRef.current = controls;
+                setActiveCamera('Back camera (auto)');
             } catch (scanError) {
-                setError('Kamera tidak bisa diakses. Pastikan izin kamera diberikan.');
-                // eslint-disable-next-line no-console
-                console.error('Scanner init error:', scanError);
+                try {
+                    const devices = await BrowserMultiFormatReader.listVideoInputDevices();
+                    const orderedDevices = orderDevicesForQr(devices);
+
+                    let controls = null;
+                    for (const device of orderedDevices) {
+                        try {
+                            controls = await codeReader.decodeFromVideoDevice(
+                                device.deviceId,
+                                videoRef.current,
+                                (result, err) => handleDecodeResult(result, err, controlsRef.current)
+                            );
+                            setActiveCamera(device?.label || 'Camera');
+                            break;
+                        } catch {
+                            // try next camera
+                        }
+                    }
+
+                    if (!controls) {
+                        throw scanError;
+                    }
+
+                    controlsRef.current = controls;
+                } catch (fallbackError) {
+                    setError('Kamera tidak bisa diakses. Pastikan izin kamera diberikan.');
+                    // eslint-disable-next-line no-console
+                    console.error('Scanner init error:', fallbackError);
+                }
             } finally {
                 setIsStarting(false);
             }
@@ -84,6 +138,9 @@ const ScanPage = () => {
                 <p className="mt-2 text-sm leading-relaxed text-slate-300">
                     Pastikan QR berada di dalam frame kamera. Jika kamera bermasalah, gunakan input manual di bawah.
                 </p>
+                {activeCamera ? (
+                    <p className="mt-2 text-xs text-emerald-300">Kamera aktif: {activeCamera}</p>
+                ) : null}
             </section>
 
             <div className="relative min-h-[280px] overflow-hidden rounded-3xl border border-white/15 bg-black shadow-glass">
