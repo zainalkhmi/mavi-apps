@@ -1,0 +1,9 @@
+{
+    "name": "MAVI Mobile Reader",
+    "short_name": "MAVI Reader",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0b1220",
+    "theme_color": "#ef4444",
+    "description": "Mobile SOP reader untuk scan QR dan buka SOP published dari pusat mavi-y."
+}
