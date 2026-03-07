@@ -1,13 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Save, Settings, TestTube2 } from 'lucide-react';
+import { LogOut, Save, Settings, TestTube2 } from 'lucide-react';
 import { getRuntimeConfig, runtimeConfigDefaults, saveRuntimeConfig } from '../lib/runtimeConfig';
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 
 const SettingsPage = () => {
     const initial = useMemo(() => getRuntimeConfig(), []);
     const [form, setForm] = useState(initial);
     const [message, setMessage] = useState('');
     const [isTesting, setIsTesting] = useState(false);
+    const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const update = (key, value) => {
         setForm((prev) => ({ ...prev, [key]: value }));
@@ -50,6 +52,23 @@ const SettingsPage = () => {
             setMessage(`❌ Test webhook gagal: ${err?.message || 'Unknown error'}`);
         } finally {
             setIsTesting(false);
+        }
+    };
+
+    const handleLogout = async () => {
+        if (!isSupabaseConfigured || !supabase) {
+            setMessage('Supabase belum dikonfigurasi, logout tidak diperlukan.');
+            return;
+        }
+
+        setIsLoggingOut(true);
+        try {
+            const { error } = await supabase.auth.signOut();
+            if (error) throw error;
+        } catch (err) {
+            setMessage(`❌ Logout gagal: ${err?.message || 'Unknown error'}`);
+        } finally {
+            setIsLoggingOut(false);
         }
     };
 
@@ -169,6 +188,15 @@ const SettingsPage = () => {
                     Reset
                 </button>
             </div>
+
+            <button
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-rose-300/35 bg-rose-500/10 px-4 py-2 text-sm font-semibold text-rose-100 disabled:opacity-60"
+            >
+                <LogOut size={16} />
+                {isLoggingOut ? 'Memproses logout...' : 'Logout'}
+            </button>
 
             <Link
                 to="/"

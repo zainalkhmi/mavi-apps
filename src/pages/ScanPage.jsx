@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { BrowserMultiFormatReader } from '@zxing/browser';
 import { Camera, Keyboard, ListChecks } from 'lucide-react';
+import { BarcodeFormat, DecodeHintType } from '@zxing/library';
 import { parseManualIdFromQrText } from '../lib/manualApi';
 import { captureScanDetected } from '../lib/captureApi';
 
@@ -22,6 +23,8 @@ const ScanPage = () => {
     const [isStarting, setIsStarting] = useState(false);
     const [rawValue, setRawValue] = useState('');
     const [activeCamera, setActiveCamera] = useState('');
+    const [availableCameras, setAvailableCameras] = useState([]);
+    const [selectedDeviceId, setSelectedDeviceId] = useState('');
 
     useEffect(() => {
         let isActive = true;
@@ -30,7 +33,11 @@ const ScanPage = () => {
             setError('');
             setIsStarting(true);
 
-            const codeReader = new BrowserMultiFormatReader();
+            const hints = new Map();
+            hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.QR_CODE]);
+            hints.set(DecodeHintType.TRY_HARDER, true);
+
+            const codeReader = new BrowserMultiFormatReader(hints);
 
             const handleDecodeResult = (result, err, controls) => {
                 if (!isActive) return;
@@ -53,26 +60,20 @@ const ScanPage = () => {
             };
 
             try {
-                const controls = await codeReader.decodeFromConstraints(
-                    {
-                        video: {
-                            facingMode: { ideal: 'environment' },
-                            width: { ideal: 1280 },
-                            height: { ideal: 720 }
-                        }
-                    },
-                    videoRef.current,
-                    (result, err) => handleDecodeResult(result, err, controlsRef.current)
-                );
+                const devices = await BrowserMultiFormatReader.listVideoInputDevices();
+                const orderedDevices = orderDevicesForQr(devices);
+                setAvailableCameras(orderedDevices);
 
-                controlsRef.current = controls;
-                setActiveCamera('Back camera (auto)');
-            } catch (scanError) {
-                try {
-                    const devices = await BrowserMultiFormatReader.listVideoInputDevices();
-                    const orderedDevices = orderDevicesForQr(devices);
-
-                    let controls = null;
+                let controls = null;
+                if (selectedDeviceId) {
+                    controls = await codeReader.decodeFromVideoDevice(
+                        selectedDeviceId,
+                        videoRef.current,
+                        (result, err) => handleDecodeResult(result, err, controlsRef.current)
+                    );
+                    const selectedDevice = orderedDevices.find((item) => item.deviceId === selectedDeviceId);
+                    setActiveCamera(selectedDevice?.label || 'Camera');
+                } else {
                     for (const device of orderedDevices) {
                         try {
                             controls = await codeReader.decodeFromVideoDevice(
@@ -80,23 +81,24 @@ const ScanPage = () => {
                                 videoRef.current,
                                 (result, err) => handleDecodeResult(result, err, controlsRef.current)
                             );
+                            setSelectedDeviceId(device.deviceId);
                             setActiveCamera(device?.label || 'Camera');
                             break;
                         } catch {
                             // try next camera
                         }
                     }
-
-                    if (!controls) {
-                        throw scanError;
-                    }
-
-                    controlsRef.current = controls;
-                } catch (fallbackError) {
-                    setError('Kamera tidak bisa diakses. Pastikan izin kamera diberikan.');
-                    // eslint-disable-next-line no-console
-                    console.error('Scanner init error:', fallbackError);
                 }
+
+                if (!controls) {
+                    throw new Error('No camera device can start scanner');
+                }
+
+                controlsRef.current = controls;
+            } catch (scanError) {
+                setError('Kamera tidak bisa diakses / QR belum terbaca. Coba ganti kamera atau gunakan input manual.');
+                // eslint-disable-next-line no-console
+                console.error('Scanner init error:', scanError);
             } finally {
                 setIsStarting(false);
             }
@@ -108,7 +110,7 @@ const ScanPage = () => {
             isActive = false;
             controlsRef.current?.stop();
         };
-    }, [navigate]);
+    }, [navigate, selectedDeviceId]);
 
     const handleManualOpen = () => {
         const manualId = parseManualIdFromQrText(rawValue);
@@ -140,6 +142,23 @@ const ScanPage = () => {
                 </p>
                 {activeCamera ? (
                     <p className="mt-2 text-xs text-emerald-300">Kamera aktif: {activeCamera}</p>
+                ) : null}
+                {availableCameras.length > 1 ? (
+                    <div className="mt-3 space-y-1">
+                        <label htmlFor="cameraSelect" className="text-xs text-slate-300">Pilih kamera</label>
+                        <select
+                            id="cameraSelect"
+                            value={selectedDeviceId}
+                            onChange={(event) => setSelectedDeviceId(event.target.value)}
+                            className="min-h-[40px] w-full rounded-xl border border-slate-600 bg-slate-900/70 px-3 py-2 text-sm text-slate-100 outline-none focus:border-yellow-300"
+                        >
+                            {availableCameras.map((camera) => (
+                                <option key={camera.deviceId} value={camera.deviceId}>
+                                    {camera.label || `Camera ${camera.deviceId.slice(0, 4)}`}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 ) : null}
             </section>
 

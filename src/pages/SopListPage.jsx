@@ -6,13 +6,33 @@ const SopListPage = () => {
     const [search, setSearch] = useState('');
     const [manuals, setManuals] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadingProgress, setLoadingProgress] = useState(10);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (!isLoading) {
+            setLoadingProgress(100);
+            return;
+        }
+
+        setLoadingProgress((prev) => (prev > 12 ? prev : 12));
+        const timer = setInterval(() => {
+            setLoadingProgress((prev) => {
+                if (prev >= 92) return prev;
+                const step = Math.max(2, Math.round((100 - prev) / 12));
+                return Math.min(prev + step, 92);
+            });
+        }, 140);
+
+        return () => clearInterval(timer);
+    }, [isLoading]);
 
     useEffect(() => {
         let cancelled = false;
 
         const load = async () => {
             setIsLoading(true);
+            setLoadingProgress(12);
             setError('');
             try {
                 const rows = await listPublishedManualSummaries(search);
@@ -61,7 +81,20 @@ const SopListPage = () => {
                 <small className="text-xs text-slate-400">{totalText}</small>
             </div>
 
-            {isLoading ? <div className="rounded-xl border border-sky-400/35 bg-sky-950/35 p-3 text-sm text-sky-200">Memuat SOP...</div> : null}
+            {isLoading ? (
+                <div className="rounded-xl border border-sky-400/35 bg-sky-950/35 p-3 text-sm text-sky-200">
+                    <div className="flex items-center justify-between gap-2">
+                        <span>Memuat SOP dari server...</span>
+                        <span className="text-xs font-semibold text-sky-100">{Math.round(loadingProgress)}%</span>
+                    </div>
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-sky-900/70">
+                        <div
+                            className="h-full rounded-full bg-gradient-to-r from-sky-300 to-cyan-300 transition-[width] duration-200"
+                            style={{ width: `${loadingProgress}%` }}
+                        />
+                    </div>
+                </div>
+            ) : null}
             {error ? <div className="rounded-xl border border-rose-400/35 bg-rose-950/40 p-3 text-sm text-rose-200">{error}</div> : null}
 
             {!isLoading && !error ? (

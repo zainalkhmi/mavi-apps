@@ -2,7 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, House, ListChecks } from 'lucide-react';
 import { extractSteps, getPublishedManualById } from '../lib/manualApi';
-import { captureStepViewed } from '../lib/captureApi';
+import {
+    captureRunCompleted,
+    captureRunStarted,
+    captureStepChecked,
+    captureStepViewed
+} from '../lib/captureApi';
+import { createRun, upsertRunStep, updateRunStatus } from '../lib/executionApi';
 
 const extractYouTubeVideoId = (value = '') => {
     const raw = String(value || '').trim();
@@ -35,8 +41,34 @@ const SopViewerPage = () => {
     const { manualId } = useParams();
     const [manual, setManual] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [loadingProgress, setLoadingProgress] = useState(10);
     const [error, setError] = useState('');
     const [currentStepIndex, setCurrentStepIndex] = useState(0);
+    const [activeRun, setActiveRun] = useState(null);
+    const [stepForms, setStepForms] = useState({});
+    const [executionError, setExecutionError] = useState('');
+    const [executionMessage, setExecutionMessage] = useState('');
+    const [isStartingRun, setIsStartingRun] = useState(false);
+    const [isSavingStep, setIsSavingStep] = useState(false);
+    const [isCompletingRun, setIsCompletingRun] = useState(false);
+
+    useEffect(() => {
+        if (!isLoading) {
+            setLoadingProgress(100);
+            return;
+        }
+
+        setLoadingProgress((prev) => (prev > 12 ? prev : 12));
+        const timer = setInterval(() => {
+            setLoadingProgress((prev) => {
+                if (prev >= 92) return prev;
+                const step = Math.max(2, Math.round((100 - prev) / 12));
+                return Math.min(prev + step, 92);
+            });
+        }, 140);
+
+        return () => clearInterval(timer);
+    }, [isLoading]);
 
     useEffect(() => {
         let cancelled = false;
@@ -49,6 +81,7 @@ const SopViewerPage = () => {
             }
 
             setIsLoading(true);
+            setLoadingProgress(12);
             setError('');
             try {
                 const data = await getPublishedManualById(manualId);
@@ -58,6 +91,10 @@ const SopViewerPage = () => {
                     } else {
                         setManual(data);
                         setCurrentStepIndex(0);
+                        setActiveRun(null);
+                        setStepForms({});
+                        setExecutionError('');
+                        setExecutionMessage('');
                     }
                 }
             } catch (err) {
@@ -78,6 +115,15 @@ const SopViewerPage = () => {
     const steps = useMemo(() => extractSteps(manual), [manual]);
     const currentStep = steps[currentStepIndex] || null;
     const progress = steps.length ? Math.round(((currentStepIndex + 1) / steps.length) * 100) : 0;
+    const currentStepForm = stepForms[currentStepIndex] || {
+        isChecked: false,
+        inputNumber: '',
+        resultStatus: 'na',
+        noteText: '',
+        evidenceImageUrl: ''
+    };
+    const allStepsChecked = steps.length > 0
+        && steps.every((_, index) => Boolean(stepForms[index]?.isChecked));
 
     useEffect(() => {
         if (isLoading || error || !manualId || !currentStep) return;
@@ -90,6 +136,113 @@ const SopViewerPage = () => {
             source: 'viewer'
         });
     }, [isLoading, error, manualId, manual?.title, currentStepIndex, currentStep]);
+
+    const updateCurrentStepForm = (key, value) => {
+        setStepForms((prev) => ({
+            ...prev,
+            [currentStepIndex]: {
+                isChecked: prev[currentStepIndex]?.isChecked || false,
+                inputNumber: prev[currentStepIndex]?.inputNumber ?? '',
+                resultStatus: prev[currentStepIndex]?.resultStatus || 'na',
+                noteText: prev[currentStepIndex]?.noteText || '',
+                evidenceImageUrl: prev[currentStepIndex]?.evidenceImageUrl || '',
+                [key]: value
+            }
+        }));
+    };
+
+    const handleStartExecution = async () => {
+        if (!manual) return;
+
+        setExecutionError('');
+        setExecutionMessage('');
+        setIsStartingRun(true);
+        try {
+            const run = await createRun(manual, 'viewer');
+            setActiveRun(run);
+            setExecutionMessage('✅ Eksekusi SOP dimulai. Lengkapi data setiap step.');
+            captureRunStarted({
+                runId: run?.id,
+                manualId: manual?.id,
+                manualTitle: manual?.title,
+                source: 'viewer'
+            });
+        } catch (err) {
+            setExecutionError(`❌ Gagal memulai eksekusi: ${err?.message || 'Unknown error'}`);
+        } finally {
+            setIsStartingRun(false);
+        }
+    };
+
+    const handleSaveCurrentStep = async () => {
+        if (!activeRun || !currentStep) {
+            setExecutionError('Mulai eksekusi dulu sebelum menyimpan step.');
+            return;
+        }
+
+        setExecutionError('');
+        setExecutionMessage('');
+        setIsSavingStep(true);
+
+        const numericValue = String(currentStepForm.inputNumber || '').trim();
+        const parsedNumber = numericValue === '' ? null : Number(numericValue);
+        const normalizedInputNumber = Number.isFinite(parsedNumber) ? parsedNumber : null;
+
+        try {
+            await upsertRunStep({
+                runId: activeRun.id,
+                stepIndex: currentStepIndex,
+                stepTitle: currentStep?.title,
+                isChecked: Boolean(currentStepForm.isChecked),
+                inputNumber: normalizedInputNumber,
+                resultStatus: currentStepForm.resultStatus || 'na',
+                noteText: currentStepForm.noteText,
+                evidenceImageUrl: currentStepForm.evidenceImageUrl
+            });
+
+            setExecutionMessage(`✅ Step ${currentStepIndex + 1} berhasil disimpan.`);
+            captureStepChecked({
+                runId: activeRun?.id,
+                manualId,
+                manualTitle: manual?.title,
+                stepIndex: currentStepIndex,
+                stepTitle: currentStep?.title,
+                resultStatus: currentStepForm.resultStatus || 'na',
+                source: 'viewer'
+            });
+        } catch (err) {
+            setExecutionError(`❌ Gagal simpan step: ${err?.message || 'Unknown error'}`);
+        } finally {
+            setIsSavingStep(false);
+        }
+    };
+
+    const handleCompleteRun = async () => {
+        if (!activeRun) return;
+        if (!allStepsChecked) {
+            setExecutionError('Semua step wajib dicentang sebelum run diselesaikan.');
+            return;
+        }
+
+        setExecutionError('');
+        setExecutionMessage('');
+        setIsCompletingRun(true);
+        try {
+            const updatedRun = await updateRunStatus(activeRun.id, 'completed');
+            setActiveRun(updatedRun);
+            setExecutionMessage('🎉 Run berhasil diselesaikan.');
+            captureRunCompleted({
+                runId: activeRun?.id,
+                manualId,
+                manualTitle: manual?.title,
+                source: 'viewer'
+            });
+        } catch (err) {
+            setExecutionError(`❌ Gagal menyelesaikan run: ${err?.message || 'Unknown error'}`);
+        } finally {
+            setIsCompletingRun(false);
+        }
+    };
 
     const renderMedia = () => {
         if (!currentStep) {
@@ -131,7 +284,20 @@ const SopViewerPage = () => {
                 <p className="mt-2 text-sm text-slate-300">{manual?.documentNumber || '-'} • v{manual?.version || '1.0'}</p>
             </header>
 
-            {isLoading ? <div className="rounded-2xl border border-sky-400/35 bg-sky-950/35 p-3 text-sm text-sky-200">Memuat SOP...</div> : null}
+            {isLoading ? (
+                <div className="rounded-2xl border border-sky-400/35 bg-sky-950/35 p-3 text-sm text-sky-200">
+                    <div className="flex items-center justify-between gap-2">
+                        <span>Memuat SOP dari server...</span>
+                        <span className="text-xs font-semibold text-sky-100">{Math.round(loadingProgress)}%</span>
+                    </div>
+                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-sky-900/70">
+                        <div
+                            className="h-full rounded-full bg-gradient-to-r from-sky-300 to-cyan-300 transition-[width] duration-200"
+                            style={{ width: `${loadingProgress}%` }}
+                        />
+                    </div>
+                </div>
+            ) : null}
             {!isLoading && error ? <div className="rounded-2xl border border-rose-400/35 bg-rose-950/40 p-3 text-sm text-rose-200">{error}</div> : null}
 
             {!isLoading && !error ? (
@@ -151,6 +317,99 @@ const SopViewerPage = () => {
                             className="prose prose-invert prose-sm max-w-none text-slate-200"
                             dangerouslySetInnerHTML={{ __html: currentStep?.instructions || '<p>No instruction available.</p>' }}
                         />
+                    </section>
+
+                    <section className="space-y-3 rounded-3xl border border-emerald-300/30 bg-emerald-950/20 p-4 shadow-glass">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <h3 className="m-0 text-base font-semibold text-emerald-200">Execute SOP</h3>
+                            <span className="text-xs text-emerald-100/90">
+                                {activeRun ? `Run: ${activeRun.status}` : 'Run belum dimulai'}
+                            </span>
+                        </div>
+
+                        {!activeRun ? (
+                            <button
+                                onClick={handleStartExecution}
+                                disabled={isStartingRun}
+                                className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-gradient-to-r from-emerald-300 to-lime-300 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-70"
+                            >
+                                {isStartingRun ? 'Memulai run...' : 'Mulai Eksekusi SOP'}
+                            </button>
+                        ) : (
+                            <>
+                                <label className="flex items-center gap-2 text-sm text-slate-100">
+                                    <input
+                                        type="checkbox"
+                                        checked={Boolean(currentStepForm.isChecked)}
+                                        onChange={(event) => updateCurrentStepForm('isChecked', event.target.checked)}
+                                    />
+                                    Step ini sudah dikerjakan
+                                </label>
+
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input
+                                        type="number"
+                                        value={currentStepForm.inputNumber}
+                                        onChange={(event) => updateCurrentStepForm('inputNumber', event.target.value)}
+                                        placeholder="Input angka"
+                                        className="min-h-[42px] rounded-xl border border-slate-600 bg-slate-900/70 px-3 py-2 text-sm text-slate-100 outline-none focus:border-emerald-300"
+                                    />
+                                    <select
+                                        value={currentStepForm.resultStatus}
+                                        onChange={(event) => updateCurrentStepForm('resultStatus', event.target.value)}
+                                        className="min-h-[42px] rounded-xl border border-slate-600 bg-slate-900/70 px-3 py-2 text-sm text-slate-100 outline-none focus:border-emerald-300"
+                                    >
+                                        <option value="na">N/A</option>
+                                        <option value="pass">Pass</option>
+                                        <option value="fail">Fail</option>
+                                    </select>
+                                </div>
+
+                                <textarea
+                                    value={currentStepForm.noteText}
+                                    onChange={(event) => updateCurrentStepForm('noteText', event.target.value)}
+                                    placeholder="Catatan step (opsional)"
+                                    rows={3}
+                                    className="w-full rounded-xl border border-slate-600 bg-slate-900/70 px-3 py-2 text-sm text-slate-100 outline-none focus:border-emerald-300"
+                                />
+
+                                <input
+                                    type="text"
+                                    value={currentStepForm.evidenceImageUrl}
+                                    onChange={(event) => updateCurrentStepForm('evidenceImageUrl', event.target.value)}
+                                    placeholder="URL foto bukti (opsional)"
+                                    className="min-h-[42px] w-full rounded-xl border border-slate-600 bg-slate-900/70 px-3 py-2 text-sm text-slate-100 outline-none focus:border-emerald-300"
+                                />
+
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        onClick={handleSaveCurrentStep}
+                                        disabled={isSavingStep}
+                                        className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-emerald-200/30 bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-100 disabled:opacity-70"
+                                    >
+                                        {isSavingStep ? 'Menyimpan...' : 'Simpan Step'}
+                                    </button>
+                                    <button
+                                        onClick={handleCompleteRun}
+                                        disabled={isCompletingRun || !allStepsChecked || activeRun?.status === 'completed'}
+                                        className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-gradient-to-r from-emerald-300 to-lime-300 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60"
+                                    >
+                                        {isCompletingRun ? 'Menyelesaikan...' : 'Selesaikan Run'}
+                                    </button>
+                                </div>
+
+                                <p className="m-0 text-xs text-slate-300">
+                                    Checklist progres run: {steps.filter((_, index) => stepForms[index]?.isChecked).length}/{steps.length}
+                                </p>
+                            </>
+                        )}
+
+                        {executionError ? (
+                            <div className="rounded-2xl border border-rose-400/35 bg-rose-950/40 p-3 text-sm text-rose-200">{executionError}</div>
+                        ) : null}
+                        {executionMessage ? (
+                            <div className="rounded-2xl border border-emerald-300/35 bg-emerald-950/40 p-3 text-sm text-emerald-200">{executionMessage}</div>
+                        ) : null}
                     </section>
 
                     <div className="grid grid-cols-2 gap-2">

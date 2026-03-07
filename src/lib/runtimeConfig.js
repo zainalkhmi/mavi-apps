@@ -18,9 +18,9 @@ const normalize = (value) => {
         supabaseUrl: String(value.supabaseUrl || DEFAULTS.supabaseUrl).trim(),
         supabaseAnonKey: String(value.supabaseAnonKey || DEFAULTS.supabaseAnonKey).trim(),
         supabaseCaptureTable: String(value.supabaseCaptureTable || DEFAULTS.supabaseCaptureTable).trim() || DEFAULTS.supabaseCaptureTable,
-        supabaseCaptureEnabled: Boolean(value.supabaseCaptureEnabled),
+        supabaseCaptureEnabled: value.supabaseCaptureEnabled ?? DEFAULTS.supabaseCaptureEnabled,
         googleSheetWebhookUrl: String(value.googleSheetWebhookUrl || DEFAULTS.googleSheetWebhookUrl).trim(),
-        googleSheetCaptureEnabled: Boolean(value.googleSheetCaptureEnabled),
+        googleSheetCaptureEnabled: value.googleSheetCaptureEnabled ?? DEFAULTS.googleSheetCaptureEnabled,
         operatorName: String(value.operatorName || DEFAULTS.operatorName).trim(),
         deviceLabel: String(value.deviceLabel || DEFAULTS.deviceLabel).trim()
     };
@@ -29,11 +29,19 @@ const normalize = (value) => {
 export const getRuntimeConfig = () => {
     try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return { ...DEFAULTS };
+        if (!raw) {
+            const normalizedDefaults = normalize(DEFAULTS);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedDefaults));
+            return normalizedDefaults;
+        }
         const parsed = JSON.parse(raw);
-        return normalize(parsed);
+        const normalized = normalize(parsed);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
+        return normalized;
     } catch {
-        return { ...DEFAULTS };
+        const normalizedDefaults = normalize(DEFAULTS);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedDefaults));
+        return normalizedDefaults;
     }
 };
 
