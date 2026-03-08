@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { Camera, Keyboard, ListChecks } from 'lucide-react';
 import { parseManualIdFromQrText } from '../lib/manualApi';
 import { captureScanDetected } from '../lib/captureApi';
@@ -46,6 +46,9 @@ const ScanPage = () => {
             if (!scanner) return;
 
             try {
+                if (scanner.isScanning) {
+                    await scanner.stop();
+                }
                 await scanner.clear();
             } catch {
                 // ignore
@@ -59,22 +62,22 @@ const ScanPage = () => {
             setIsStarting(true);
 
             hasNavigatedRef.current = false;
+
+            // Hack for React 18 Strict Mode double-invoke:
+            // Tunggu sebentar untuk membiarkan StrictMode segera memanggil cleanup function.
+            // Jika dalam waktu tunggu (50ms) komponen di-unmount, fungsi akan dibatalkan.
+            await new Promise((resolve) => setTimeout(resolve, 50));
+            if (!isActive) return;
+
             await stopScanner();
 
             try {
-                const scanner = new Html5QrcodeScanner(
-                    SCANNER_ELEMENT_ID,
-                    {
-                        fps: 10,
-                        qrbox: { width: 220, height: 220 },
-                        aspectRatio: 1.777,
-                        rememberLastUsedCamera: true
-                    },
-                    false
-                );
+                const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
                 scannerRef.current = scanner;
 
-                scanner.render(
+                await scanner.start(
+                    { facingMode: "environment" },
+                    { fps: 10 },
                     (decodedText) => {
                         if (!isActive || hasNavigatedRef.current) return;
 
@@ -94,8 +97,7 @@ const ScanPage = () => {
                     (scanErrorMessage) => {
                         if (!isActive) return;
                         if (/NotFoundException/i.test(String(scanErrorMessage || ''))) return;
-                        // html5-qrcode memanggil callback error terus menerus per frame,
-                        // jadi kita abaikan agar UI tidak spam error.
+                        // Abaikan error per-frame
                     }
                 );
             } catch (scanError) {
@@ -138,16 +140,9 @@ const ScanPage = () => {
                 </p>
             </header>
 
-            <section className="rounded-3xl border border-white/10 bg-white/5 p-4 shadow-glass">
-                <h2 className="m-0 text-base font-semibold text-yellow-100">QR Quick Access</h2>
-                <p className="mt-2 text-sm leading-relaxed text-slate-300">
-                    Gunakan panel bawaan <strong>HTML5 QR Code Scanner</strong> di bawah (Start/Stop + pilih kamera).
-                    Jika kamera bermasalah, gunakan input manual di bawah.
-                </p>
-            </section>
 
             <div className="relative min-h-[280px] overflow-hidden rounded-3xl border border-white/15 bg-black shadow-glass">
-                <div id={SCANNER_ELEMENT_ID} className="h-[320px] w-full" />
+                <div id={SCANNER_ELEMENT_ID} className="w-full" />
                 {isStarting && (
                     <div className="absolute inset-0 grid place-items-center bg-slate-950/75 text-sm font-semibold">
                         Menyalakan kamera...
