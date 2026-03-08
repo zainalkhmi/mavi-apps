@@ -6,6 +6,17 @@ import { parseManualIdFromQrText } from '../lib/manualApi';
 import { captureScanDetected } from '../lib/captureApi';
 
 const SCANNER_ELEMENT_ID = 'qr-reader';
+const SCAN_CONFIG = {
+    fps: 12,
+    qrbox: { width: 260, height: 260 },
+    aspectRatio: 1,
+    disableFlip: false,
+    experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true
+    }
+};
+
+const BACK_CAMERA_LABEL_PATTERN = /(back|rear|environment|belakang)/i;
 
 const getFriendlyCameraError = (err) => {
     const name = String(err?.name || '');
@@ -34,7 +45,9 @@ const ScanPage = () => {
     const navigate = useNavigate();
     const scannerRef = useRef(null);
     const hasNavigatedRef = useRef(false);
+    const lastUnsupportedQrRef = useRef('');
     const [error, setError] = useState('');
+    const [info, setInfo] = useState('');
     const [isStarting, setIsStarting] = useState(false);
     const [rawValue, setRawValue] = useState('');
 
@@ -59,6 +72,7 @@ const ScanPage = () => {
 
         const startScanner = async () => {
             setError('');
+            setInfo('');
             setIsStarting(true);
 
             hasNavigatedRef.current = false;
@@ -75,31 +89,79 @@ const ScanPage = () => {
                 const scanner = new Html5Qrcode(SCANNER_ELEMENT_ID);
                 scannerRef.current = scanner;
 
-                await scanner.start(
-                    { facingMode: "environment" },
-                    { fps: 10 },
-                    (decodedText) => {
-                        if (!isActive || hasNavigatedRef.current) return;
+                const handleDecoded = (decodedText) => {
+                    if (!isActive || hasNavigatedRef.current) return;
 
-                        const manualId = parseManualIdFromQrText(decodedText);
-                        if (!manualId) {
-                            setError('QR terdeteksi, tapi format manualId tidak valid.');
-                            return;
+                    const manualId = parseManualIdFromQrText(decodedText);
+                    if (!manualId) {
+                        const normalizedRaw = String(decodedText || '').trim();
+                        setError('');
+                        setRawValue(normalizedRaw);
+                        setInfo('QR terbaca, tetapi bukan referensi SOP.');
+
+                        if (normalizedRaw && lastUnsupportedQrRef.current !== normalizedRaw) {
+                            lastUnsupportedQrRef.current = normalizedRaw;
+                            captureScanDetected({ manualId: null, qrRawValue: normalizedRaw, source: 'scan_non_sop' });
                         }
-
-                        hasNavigatedRef.current = true;
-                        captureScanDetected({ manualId, qrRawValue: decodedText, source: 'scan' });
-
-                        stopScanner().finally(() => {
-                            navigate(`/sop/${encodeURIComponent(manualId)}`);
-                        });
-                    },
-                    (scanErrorMessage) => {
-                        if (!isActive) return;
-                        if (/NotFoundException/i.test(String(scanErrorMessage || ''))) return;
-                        // Abaikan error per-frame
+                        return;
                     }
-                );
+
+                    setInfo('');
+                    setError('');
+                    hasNavigatedRef.current = true;
+                    captureScanDetected({ manualId, qrRawValue: decodedText, source: 'scan' });
+
+                    stopScanner().finally(() => {
+                        navigate(`/sop/${encodeURIComponent(manualId)}`);
+                    });
+                };
+
+                const handleScanFrameError = (scanErrorMessage) => {
+                    if (!isActive) return;
+                    if (/NotFoundException/i.test(String(scanErrorMessage || ''))) return;
+                    // Abaikan error per-frame
+                };
+
+                const tryStart = async (cameraConfig) => {
+                    await scanner.start(cameraConfig, SCAN_CONFIG, handleDecoded, handleScanFrameError);
+                    return true;
+                };
+
+                let started = false;
+                let lastStartError = null;
+
+                const cameraAttempts = [
+                    { facingMode: { exact: 'environment' } },
+                    { facingMode: 'environment' }
+                ];
+
+                for (const attempt of cameraAttempts) {
+                    if (started) break;
+                    try {
+                        await tryStart(attempt);
+                        started = true;
+                    } catch (err) {
+                        lastStartError = err;
+                    }
+                }
+
+                if (!started) {
+                    try {
+                        const cameras = await Html5Qrcode.getCameras();
+                        const preferred = (cameras || []).find((cam) => BACK_CAMERA_LABEL_PATTERN.test(String(cam?.label || '')));
+                        const fallback = preferred || (cameras || [])[0] || null;
+                        if (fallback?.id) {
+                            await tryStart(fallback.id);
+                            started = true;
+                        }
+                    } catch (err) {
+                        lastStartError = err;
+                    }
+                }
+
+                if (!started) {
+                    throw lastStartError || new Error('Gagal menyalakan scanner kamera.');
+                }
             } catch (scanError) {
                 setError(getFriendlyCameraError(scanError));
                 // eslint-disable-next-line no-console
@@ -120,9 +182,11 @@ const ScanPage = () => {
     const handleManualOpen = () => {
         const manualId = parseManualIdFromQrText(rawValue);
         if (!manualId) {
-            setError('Input tidak valid. Tempel URL QR atau UUID manualId.');
+            setError('');
+            setInfo('QR terbaca, tetapi bukan referensi SOP.');
             return;
         }
+        setInfo('');
         captureScanDetected({ manualId, qrRawValue: rawValue, source: 'manual_input' });
         navigate(`/sop/${encodeURIComponent(manualId)}`);
     };
@@ -172,6 +236,7 @@ const ScanPage = () => {
                 >
                     🚀 Buka SOP
                 </button>
+                {info ? <div className="rounded-2xl border border-sky-400/35 bg-sky-950/35 p-3 text-sm text-sky-200">{info}</div> : null}
                 {error ? <div className="rounded-2xl border border-rose-400/35 bg-rose-950/40 p-3 text-sm text-rose-200">{error}</div> : null}
             </div>
 
