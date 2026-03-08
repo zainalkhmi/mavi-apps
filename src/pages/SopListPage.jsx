@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { listPublishedManualSummaries } from '../lib/manualApi';
+import { isSupabaseConfigured } from '../lib/supabase';
 
 const SopListPage = () => {
     const [search, setSearch] = useState('');
@@ -34,6 +35,16 @@ const SopListPage = () => {
             setIsLoading(true);
             setLoadingProgress(12);
             setError('');
+
+            if (!isSupabaseConfigured) {
+                if (!cancelled) {
+                    setManuals([]);
+                    setError('Supabase belum dikonfigurasi. Isi VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY di environment deployment, lalu redeploy.');
+                    setIsLoading(false);
+                }
+                return;
+            }
+
             try {
                 const rows = await listPublishedManualSummaries(search);
                 if (!cancelled) setManuals(rows);

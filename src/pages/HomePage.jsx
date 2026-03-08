@@ -32,8 +32,8 @@ const HomePage = () => {
             <main className="grid gap-3">
                 {!isSupabaseConfigured ? (
                     <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-sm text-rose-300 shadow-glow-rose">
-                        Supabase belum dikonfigurasi. Isi file <code className="text-rose-200">mavi-mobile-reader/.env</code> dengan
-                        <code className="text-rose-200"> VITE_SUPABASE_URL</code> dan <code className="text-rose-200">VITE_SUPABASE_ANON_KEY</code>, lalu restart server.
+                        Supabase belum dikonfigurasi. Isi <code className="text-rose-200">VITE_SUPABASE_URL</code> (format: <code className="text-rose-200">https://&lt;project-ref&gt;.supabase.co</code>)
+                        dan <code className="text-rose-200">VITE_SUPABASE_ANON_KEY</code> di environment, lalu restart/redeploy app.
                     </div>
                 ) : null}
 

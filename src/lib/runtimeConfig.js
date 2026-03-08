@@ -1,7 +1,43 @@
 const STORAGE_KEY = 'mavi-mobile-runtime-config-v1';
+const SUPABASE_HOST_REGEX = /(?:^|\.)supabase\.co$/i;
+
+export const normalizeSupabaseUrl = (value = '') => {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+
+    const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+
+    try {
+        const parsed = new URL(withProtocol);
+        const isRestPath = parsed.pathname.toLowerCase().startsWith('/rest/v1');
+
+        if (isRestPath) {
+            parsed.pathname = '/';
+        }
+
+        parsed.search = '';
+        parsed.hash = '';
+
+        return parsed.origin;
+    } catch {
+        return raw;
+    }
+};
+
+export const isValidSupabaseUrl = (value = '') => {
+    const normalized = normalizeSupabaseUrl(value);
+    if (!normalized) return false;
+
+    try {
+        const parsed = new URL(normalized);
+        return SUPABASE_HOST_REGEX.test(parsed.hostname);
+    } catch {
+        return false;
+    }
+};
 
 const DEFAULTS = {
-    supabaseUrl: import.meta.env.VITE_SUPABASE_URL || '',
+    supabaseUrl: normalizeSupabaseUrl(import.meta.env.VITE_SUPABASE_URL || ''),
     supabaseAnonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || '',
     supabaseCaptureTable: 'scan_captures',
     supabaseCaptureEnabled: true,
@@ -15,7 +51,7 @@ const normalize = (value) => {
     if (!value || typeof value !== 'object') return { ...DEFAULTS };
 
     return {
-        supabaseUrl: String(value.supabaseUrl || DEFAULTS.supabaseUrl).trim(),
+        supabaseUrl: normalizeSupabaseUrl(value.supabaseUrl || DEFAULTS.supabaseUrl),
         supabaseAnonKey: String(value.supabaseAnonKey || DEFAULTS.supabaseAnonKey).trim(),
         supabaseCaptureTable: String(value.supabaseCaptureTable || DEFAULTS.supabaseCaptureTable).trim() || DEFAULTS.supabaseCaptureTable,
         supabaseCaptureEnabled: value.supabaseCaptureEnabled ?? DEFAULTS.supabaseCaptureEnabled,
@@ -58,7 +94,11 @@ export const saveRuntimeConfig = (partialConfig) => {
 export const getCaptureConfig = () => {
     const config = getRuntimeConfig();
 
-    const hasSupabaseKeys = Boolean(config.supabaseUrl && config.supabaseAnonKey && config.supabaseCaptureTable);
+    const hasSupabaseKeys = Boolean(
+        isValidSupabaseUrl(config.supabaseUrl)
+        && config.supabaseAnonKey
+        && config.supabaseCaptureTable
+    );
     const hasGoogleSheetWebhook = Boolean(config.googleSheetWebhookUrl);
 
     return {
