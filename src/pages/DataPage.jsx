@@ -1,7 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Database, RefreshCcw } from 'lucide-react';
-import { getCaptureConfig } from '../lib/runtimeConfig';
-import { getCaptureSupabaseClient, isSupabaseTableMissingError } from '../lib/captureSupabase';
+import {
+    Clock3,
+    Database,
+    RefreshCcw
+} from 'lucide-react';
+import { flushPendingCaptureEvents } from '../lib/captureApi';
+import { clearSyncedCaptureEvents, listCaptureEvents } from '../lib/captureLocalStore';
 import { listRecentRuns } from '../lib/executionApi';
 
 const formatDateTime = (value) => {
@@ -12,49 +16,29 @@ const formatDateTime = (value) => {
 };
 
 const DataPage = () => {
-    const captureConfig = useMemo(() => getCaptureConfig(), []);
     const [rows, setRows] = useState([]);
     const [runRows, setRunRows] = useState([]);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [runMessage, setRunMessage] = useState('');
 
-    const canLoadData = captureConfig.canUseSupabaseCapture;
-
     const loadData = useCallback(async () => {
         setMessage('');
-        if (!canLoadData) {
-            setRows([]);
-            setMessage('Supabase capture belum aktif. Atur dulu di menu Settings.');
-            return;
-        }
-
         setLoading(true);
         try {
-            const client = getCaptureSupabaseClient({
-                supabaseUrl: captureConfig.supabaseUrl,
-                supabaseAnonKey: captureConfig.supabaseAnonKey
-            });
-            if (!client) throw new Error('Konfigurasi Supabase tidak valid.');
-
-            const { data, error } = await client
-                .from(captureConfig.supabaseCaptureTable)
-                .select('id,event_type,occurred_at,manual_id,manual_title,step_index,step_title,source,operator_name,device_label,app_version')
-                .order('occurred_at', { ascending: false })
-                .limit(100);
-
-            if (error) {
-                if (isSupabaseTableMissingError(error)) {
-                    setRows([]);
-                    setMessage(`Tabel '${captureConfig.supabaseCaptureTable}' belum ada / tidak bisa diakses.`);
-                    return;
-                }
-                throw error;
+            try {
+                await flushPendingCaptureEvents();
+            } catch {
+                // ignore flush error, local list tetap ditampilkan
             }
 
-            setRows(data || []);
-            if (!data?.length) {
-                setMessage('Belum ada data capture. Coba scan atau buka SOP dulu.');
+            await clearSyncedCaptureEvents();
+
+            const localRows = await listCaptureEvents(100);
+            const pendingRows = (localRows || []).filter((item) => item?.status !== 'synced');
+            setRows(pendingRows);
+            if (!pendingRows.length) {
+                setMessage('Tidak ada antrean capture. Semua data sudah ter-upload.');
             }
 
             try {
@@ -73,13 +57,18 @@ const DataPage = () => {
             }
         } catch (err) {
             setRows([]);
-            setMessage(`Gagal memuat data capture: ${err?.message || 'Unknown error'}`);
+            setMessage(`Gagal memuat data capture lokal: ${err?.message || 'Unknown error'}`);
             setRunRows([]);
             setRunMessage('');
         } finally {
             setLoading(false);
         }
-    }, [canLoadData, captureConfig.supabaseAnonKey, captureConfig.supabaseCaptureTable, captureConfig.supabaseUrl]);
+    }, []);
+
+    const stats = useMemo(() => {
+        const total = rows.length;
+        return { total, pending: total };
+    }, [rows]);
 
     useEffect(() => {
         loadData();
@@ -94,9 +83,20 @@ const DataPage = () => {
                 </div>
                 <h1 className="m-0 text-2xl font-bold tracking-tight">Data</h1>
                 <p className="mt-2 text-sm text-slate-300">
-                    Menampilkan 100 data capture terbaru dari tabel Supabase.
+                    Menampilkan antrean capture lokal yang belum ter-upload (pending) dari perangkat (IndexedDB).
                 </p>
             </header>
+
+            <section className="grid grid-cols-2 gap-2 rounded-2xl border border-white/15 bg-white/5 p-3 text-center text-xs">
+                <div>
+                    <p className="m-0 inline-flex items-center gap-1 text-slate-300"><Database size={12} /> Total</p>
+                    <p className="m-0 text-base font-semibold text-slate-100">{stats.total}</p>
+                </div>
+                <div>
+                    <p className="m-0 inline-flex items-center gap-1 text-slate-300"><Clock3 size={12} /> Pending</p>
+                    <p className="m-0 text-base font-semibold text-amber-300">{stats.pending}</p>
+                </div>
+            </section>
 
             <div className="flex justify-end">
                 <button
@@ -117,16 +117,24 @@ const DataPage = () => {
                 {rows.map((item) => (
                     <article key={item.id} className="rounded-2xl border border-white/15 bg-white/5 p-3 shadow-glass">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="m-0 text-sm font-semibold text-yellow-200">{item.event_type || '-'}</p>
-                            <p className="m-0 text-xs text-slate-300">{formatDateTime(item.occurred_at)}</p>
+                            <p className="m-0 text-sm font-semibold text-yellow-200">{item?.payload?.eventType || '-'}</p>
+                            <div className="flex items-center gap-2">
+                                <span className="rounded-full border border-amber-300/40 bg-amber-500/15 px-2 py-1 text-[10px] font-semibold uppercase text-amber-200">
+                                    <span className="inline-flex items-center gap-1"><Clock3 size={10} /> pending</span>
+                                </span>
+                                <p className="m-0 text-xs text-slate-300">{formatDateTime(item?.payload?.timestamp || item?.createdAt)}</p>
+                            </div>
                         </div>
                         <div className="mt-2 grid grid-cols-1 gap-1 text-xs text-slate-300">
-                            <p className="m-0">manualId: <span className="text-slate-100">{item.manual_id || '-'}</span></p>
-                            <p className="m-0">manualTitle: <span className="text-slate-100">{item.manual_title || '-'}</span></p>
-                            <p className="m-0">step: <span className="text-slate-100">{Number.isFinite(item.step_index) ? item.step_index : '-'}</span> • <span className="text-slate-100">{item.step_title || '-'}</span></p>
-                            <p className="m-0">source: <span className="text-slate-100">{item.source || '-'}</span></p>
-                            <p className="m-0">operator/device: <span className="text-slate-100">{item.operator_name || '-'} / {item.device_label || '-'}</span></p>
-                            <p className="m-0">appVersion: <span className="text-slate-100">{item.app_version || '-'}</span></p>
+                            <p className="m-0">manualId: <span className="text-slate-100">{item?.payload?.manualId || '-'}</span></p>
+                            <p className="m-0">manualTitle: <span className="text-slate-100">{item?.payload?.manualTitle || '-'}</span></p>
+                            <p className="m-0">step: <span className="text-slate-100">{Number.isFinite(item?.payload?.stepIndex) ? item.payload.stepIndex : '-'}</span> • <span className="text-slate-100">{item?.payload?.stepTitle || '-'}</span></p>
+                            <p className="m-0">source: <span className="text-slate-100">{item?.payload?.source || '-'}</span></p>
+                            <p className="m-0">operator/device: <span className="text-slate-100">{item?.payload?.operatorName || '-'} / {item?.payload?.deviceLabel || '-'}</span></p>
+                            <p className="m-0">appVersion: <span className="text-slate-100">{item?.payload?.appVersion || '-'}</span></p>
+                            {item?.lastError ? (
+                                <p className="m-0 text-amber-200">lastError: <span className="text-amber-100">{item.lastError}</span></p>
+                            ) : null}
                         </div>
                     </article>
                 ))}

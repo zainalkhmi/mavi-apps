@@ -1,11 +1,21 @@
 import { getCaptureConfig } from './runtimeConfig';
 import { getCaptureSupabaseClient, isSupabaseTableMissingError } from './captureSupabase';
+import {
+    enqueueCaptureEvent,
+    getPendingCaptureEvents,
+    keepCaptureEventPending,
+    markCaptureEventSynced
+} from './captureLocalStore';
 
 const APP_VERSION = import.meta.env.VITE_APP_VERSION || 'dev';
 let hasWarnedMissingCaptureTable = false;
 let detectedMissingTableKey = '';
 const MISSING_CAPTURE_TABLE_KEY_STORAGE = 'mavi-missing-capture-table-key';
 const MISSING_TABLE_RECHECK_MS = 5 * 60 * 1000;
+const PENDING_SYNC_BATCH_SIZE = 20;
+
+let isSyncingPending = false;
+let hasBoundOnlineListener = false;
 
 const getTableKey = (config) => `${config.supabaseUrl}::${config.supabaseCaptureTable}`;
 
@@ -141,9 +151,7 @@ const sendToGoogleSheet = async (payload) => {
     return { ok: true };
 };
 
-const captureEvent = async (eventType, data) => {
-    const payload = basePayload(eventType, data);
-
+const sendPayloadToTargets = async (payload) => {
     const results = await Promise.allSettled([
         sendToSupabase(payload),
         sendToGoogleSheet(payload)
@@ -153,9 +161,73 @@ const captureEvent = async (eventType, data) => {
         .filter((item) => item.status === 'rejected')
         .map((item) => item.reason);
 
+    return { results, errors };
+};
+
+const bindOnlineSyncListener = () => {
+    if (hasBoundOnlineListener || typeof window === 'undefined') return;
+
+    window.addEventListener('online', () => {
+        flushPendingCaptureEvents();
+    });
+
+    hasBoundOnlineListener = true;
+};
+
+export const flushPendingCaptureEvents = async () => {
+    if (isSyncingPending) return { skipped: true, reason: 'sync_in_progress' };
+
+    isSyncingPending = true;
+    try {
+        const pending = await getPendingCaptureEvents(PENDING_SYNC_BATCH_SIZE);
+        if (!pending.length) return { ok: true, syncedCount: 0 };
+
+        let syncedCount = 0;
+        for (const item of pending) {
+            const { errors } = await sendPayloadToTargets(item.payload);
+
+            if (errors.length === 0) {
+                await markCaptureEventSynced(item.id);
+                syncedCount += 1;
+            } else {
+                const message = errors.map((err) => err?.message || String(err)).join(' | ');
+                await keepCaptureEventPending(item.id, message);
+            }
+        }
+
+        return { ok: true, syncedCount };
+    } finally {
+        isSyncingPending = false;
+    }
+};
+
+const captureEvent = async (eventType, data) => {
+    const payload = basePayload(eventType, data);
+    bindOnlineSyncListener();
+
+    let localId = null;
+    try {
+        localId = await enqueueCaptureEvent(payload);
+    } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('[capture] Failed to write local event store:', err);
+    }
+
+    const { results, errors } = await sendPayloadToTargets(payload);
+
+    if (localId) {
+        if (errors.length === 0) {
+            await markCaptureEventSynced(localId);
+        } else {
+            const message = errors.map((err) => err?.message || String(err)).join(' | ');
+            await keepCaptureEventPending(localId, message);
+        }
+    }
+
     if (errors.length) {
         // eslint-disable-next-line no-console
         console.warn('[capture] One or more capture targets failed:', errors);
+        flushPendingCaptureEvents();
     }
 
     return results;

@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 import { LogOut, Save, Settings, TestTube2 } from 'lucide-react';
 import { getRuntimeConfig, runtimeConfigDefaults, saveRuntimeConfig } from '../lib/runtimeConfig';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { getCaptureSupabaseClient } from '../lib/captureSupabase';
 
 const SettingsPage = () => {
     const initial = useMemo(() => getRuntimeConfig(), []);
     const [form, setForm] = useState(initial);
     const [message, setMessage] = useState('');
-    const [isTesting, setIsTesting] = useState(false);
+    const [isTestingSupabase, setIsTestingSupabase] = useState(false);
+    const [isTestingGoogleSheet, setIsTestingGoogleSheet] = useState(false);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
 
     const update = (key, value) => {
@@ -27,6 +29,38 @@ const SettingsPage = () => {
         setMessage('♻️ Konfigurasi direset ke default.');
     };
 
+    const handleTestSupabase = async () => {
+        setMessage('');
+        if (!form.supabaseUrl || !form.supabaseAnonKey || !form.supabaseCaptureTable) {
+            setMessage('Isi dulu Supabase URL, Anon Key, dan nama tabel capture.');
+            return;
+        }
+
+        setIsTestingSupabase(true);
+        try {
+            const client = getCaptureSupabaseClient({
+                supabaseUrl: form.supabaseUrl,
+                supabaseAnonKey: form.supabaseAnonKey
+            });
+
+            if (!client) {
+                throw new Error('Konfigurasi Supabase tidak valid.');
+            }
+
+            const { error } = await client
+                .from(form.supabaseCaptureTable)
+                .select('*', { count: 'exact', head: true })
+                .limit(1);
+
+            if (error) throw error;
+            setMessage('✅ Test koneksi Supabase sukses.');
+        } catch (err) {
+            setMessage(`❌ Test koneksi Supabase gagal: ${err?.message || 'Unknown error'}`);
+        } finally {
+            setIsTestingSupabase(false);
+        }
+    };
+
     const handleTestGoogleSheet = async () => {
         setMessage('');
         if (!form.googleSheetWebhookUrl) {
@@ -34,7 +68,7 @@ const SettingsPage = () => {
             return;
         }
 
-        setIsTesting(true);
+        setIsTestingGoogleSheet(true);
         try {
             const res = await fetch(form.googleSheetWebhookUrl, {
                 method: 'POST',
@@ -51,7 +85,7 @@ const SettingsPage = () => {
         } catch (err) {
             setMessage(`❌ Test webhook gagal: ${err?.message || 'Unknown error'}`);
         } finally {
-            setIsTesting(false);
+            setIsTestingGoogleSheet(false);
         }
     };
 
@@ -136,6 +170,15 @@ const SettingsPage = () => {
                     placeholder="Nama tabel capture (contoh: scan_captures)"
                     className="min-h-[44px] w-full rounded-xl border border-slate-600 bg-slate-900/70 px-3 py-2 text-sm text-slate-100 outline-none focus:border-yellow-300"
                 />
+
+                <button
+                    onClick={handleTestSupabase}
+                    disabled={isTestingSupabase}
+                    className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 disabled:opacity-60"
+                >
+                    <TestTube2 size={16} />
+                    {isTestingSupabase ? 'Testing...' : 'Test Connection'}
+                </button>
             </section>
 
             <section className="space-y-3 rounded-3xl border border-white/15 bg-white/10 p-4 shadow-glass">
@@ -161,11 +204,11 @@ const SettingsPage = () => {
 
                 <button
                     onClick={handleTestGoogleSheet}
-                    disabled={isTesting}
+                    disabled={isTestingGoogleSheet}
                     className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 disabled:opacity-60"
                 >
                     <TestTube2 size={16} />
-                    {isTesting ? 'Testing...' : 'Test Webhook'}
+                    {isTestingGoogleSheet ? 'Testing...' : 'Test Connection'}
                 </button>
             </section>
 

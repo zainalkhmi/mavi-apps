@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Html5Qrcode } from 'html5-qrcode';
-import { Camera, Keyboard, ListChecks } from 'lucide-react';
+import { Camera, Keyboard } from 'lucide-react';
 import { parseManualIdFromQrText } from '../lib/manualApi';
 import { captureScanDetected } from '../lib/captureApi';
 
@@ -175,21 +175,6 @@ const ScanPage = () => {
                 {error ? <div className="rounded-2xl border border-rose-400/35 bg-rose-950/40 p-3 text-sm text-rose-200">{error}</div> : null}
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-                <Link
-                    to="/"
-                    className="inline-flex min-h-[42px] items-center justify-center rounded-xl border border-white/15 bg-white/5 px-3 text-sm font-medium text-slate-200"
-                >
-                    Kembali
-                </Link>
-                <Link
-                    to="/sop"
-                    className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 text-sm font-medium text-slate-200"
-                >
-                    <ListChecks size={15} />
-                    Lihat List SOP
-                </Link>
-            </div>
         </div>
     );
 };

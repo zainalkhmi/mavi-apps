@@ -126,20 +126,6 @@ const SopListPage = () => {
                 </div>
             ) : null}
 
-            <div className="grid grid-cols-2 gap-2">
-                <Link
-                    to="/"
-                    className="inline-flex min-h-[94px] items-start justify-start rounded-xl border border-[#1f3e6b] bg-[#071833] px-4 py-3 text-xl font-semibold text-slate-100"
-                >
-                    Kembali
-                </Link>
-                <Link
-                    to="/scan"
-                    className="inline-flex min-h-[94px] items-start justify-start rounded-xl border border-[#1f3e6b] bg-[#071833] px-4 py-3 text-xl font-semibold text-slate-100"
-                >
-                    Scan QR
-                </Link>
-            </div>
         </div>
     );
 };
