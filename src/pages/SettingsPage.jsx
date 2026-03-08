@@ -108,50 +108,50 @@ const SettingsPage = () => {
 
     return (
         <div className="space-y-4 pb-4">
-            <header className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
-                <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+            <header className="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-card">
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-slate-600 bg-slate-800 px-3 py-1 text-xs font-bold uppercase tracking-wider text-slate-400">
                     <Settings size={14} />
                     Settings
                 </div>
-                <h1 className="m-0 text-2xl font-bold tracking-tight text-slate-800">Konfigurasi Data Capture</h1>
-                <p className="mt-2 text-sm text-slate-500">
+                <h1 className="m-0 text-2xl font-bold tracking-tight text-white">Konfigurasi Data Capture</h1>
+                <p className="mt-2 text-sm text-slate-400">
                     Atur Supabase dan Google Sheet untuk menyimpan log scan + step yang dibuka.
                 </p>
             </header>
 
-            <section className="space-y-3 rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
-                <h2 className="m-0 text-base font-bold text-slate-800">Metadata Operator</h2>
+            <section className="space-y-3 rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-card">
+                <h2 className="m-0 text-base font-bold text-slate-200">Metadata Operator</h2>
                 <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Nama Operator</label>
+                    <label className="text-xs font-bold text-slate-500">Nama Operator</label>
                     <input
                         type="text"
                         value={form.operatorName}
                         onChange={(e) => update('operatorName', e.target.value)}
                         placeholder="Operator name"
-                        className="min-h-[46px] w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500"
+                        className="min-h-[46px] w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                     />
                 </div>
                 <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-500">Device Label</label>
+                    <label className="text-xs font-bold text-slate-500">Device Label</label>
                     <input
                         type="text"
                         value={form.deviceLabel}
                         onChange={(e) => update('deviceLabel', e.target.value)}
                         placeholder="Device label (contoh: HP-LINE-1)"
-                        className="min-h-[46px] w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-1 focus:ring-blue-500"
+                        className="min-h-[46px] w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                     />
                 </div>
             </section>
 
-            <section className="space-y-3 rounded-3xl border border-emerald-100 bg-emerald-50/50 p-5 shadow-soft">
-                <div className="flex items-center justify-between gap-2 border-b border-emerald-100 pb-2">
-                    <h2 className="m-0 text-base font-bold text-emerald-800">Supabase Capture</h2>
-                    <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
+            <section className="space-y-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5 shadow-glow-emerald">
+                <div className="flex items-center justify-between gap-2 border-b border-emerald-500/15 pb-3">
+                    <h2 className="m-0 text-base font-bold text-emerald-400">Supabase Capture</h2>
+                    <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-bold text-slate-300">
                         <input
                             type="checkbox"
                             checked={form.supabaseCaptureEnabled}
                             onChange={(e) => update('supabaseCaptureEnabled', e.target.checked)}
-                            className="h-5 w-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                            className="h-5 w-5 rounded border-slate-600 bg-slate-700 text-emerald-500 focus:ring-emerald-500"
                         />
                         Aktif
                     </label>
@@ -162,27 +162,27 @@ const SettingsPage = () => {
                         value={form.supabaseUrl}
                         onChange={(e) => update('supabaseUrl', e.target.value)}
                         placeholder="Supabase URL"
-                        className="min-h-[46px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                        className="min-h-[46px] w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                     />
                     <input
                         type="password"
                         value={form.supabaseAnonKey}
                         onChange={(e) => update('supabaseAnonKey', e.target.value)}
                         placeholder="Supabase Anon Key"
-                        className="min-h-[46px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                        className="min-h-[46px] w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                     />
                     <input
                         type="text"
                         value={form.supabaseCaptureTable}
                         onChange={(e) => update('supabaseCaptureTable', e.target.value)}
                         placeholder="Nama tabel capture (opsional)"
-                        className="min-h-[46px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                        className="min-h-[46px] w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
                     />
 
                     <button
                         onClick={handleTestSupabase}
                         disabled={isTestingSupabase}
-                        className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 py-2 text-sm font-bold text-emerald-700 shadow-sm transition hover:bg-emerald-50 disabled:opacity-60"
+                        className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-bold text-emerald-400 transition hover:bg-emerald-500/20 disabled:opacity-60"
                     >
                         <TestTube2 size={16} />
                         {isTestingSupabase ? 'Testing...' : 'Test Connection'}
@@ -190,15 +190,15 @@ const SettingsPage = () => {
                 </div>
             </section>
 
-            <section className="space-y-3 rounded-3xl border border-blue-100 bg-blue-50/50 p-5 shadow-soft">
-                <div className="flex items-center justify-between gap-2 border-b border-blue-100 pb-2">
-                    <h2 className="m-0 text-base font-bold text-blue-800">Google Sheet Capture</h2>
-                    <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
+            <section className="space-y-3 rounded-2xl border border-cyan-500/20 bg-cyan-500/5 p-5 shadow-glow">
+                <div className="flex items-center justify-between gap-2 border-b border-cyan-500/15 pb-3">
+                    <h2 className="m-0 text-base font-bold text-cyan-400">Google Sheet Capture</h2>
+                    <label className="inline-flex cursor-pointer items-center gap-2 text-sm font-bold text-slate-300">
                         <input
                             type="checkbox"
                             checked={form.googleSheetCaptureEnabled}
                             onChange={(e) => update('googleSheetCaptureEnabled', e.target.checked)}
-                            className="h-5 w-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                            className="h-5 w-5 rounded border-slate-600 bg-slate-700 text-cyan-500 focus:ring-cyan-500"
                         />
                         Aktif
                     </label>
@@ -209,13 +209,13 @@ const SettingsPage = () => {
                         value={form.googleSheetWebhookUrl}
                         onChange={(e) => update('googleSheetWebhookUrl', e.target.value)}
                         placeholder="Google Apps Script Web App URL"
-                        className="min-h-[46px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                        className="min-h-[46px] w-full rounded-xl border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
                     />
 
                     <button
                         onClick={handleTestGoogleSheet}
                         disabled={isTestingGoogleSheet}
-                        className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-bold text-blue-700 shadow-sm transition hover:bg-blue-50 disabled:opacity-60"
+                        className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 px-4 py-2 text-sm font-bold text-cyan-400 transition hover:bg-cyan-500/20 disabled:opacity-60"
                     >
                         <TestTube2 size={16} />
                         {isTestingGoogleSheet ? 'Testing...' : 'Test Connection'}
@@ -224,19 +224,19 @@ const SettingsPage = () => {
             </section>
 
             {message ? (
-                <div className="rounded-xl border border-slate-200 bg-white p-3 text-sm font-medium text-slate-700 shadow-sm">{message}</div>
+                <div className="rounded-xl border border-slate-700 bg-slate-800 p-3 text-sm font-medium text-slate-300">{message}</div>
             ) : null}
 
             <div className="grid grid-cols-2 gap-3 pt-2">
                 <button
                     onClick={handleReset}
-                    className="inline-flex min-h-[46px] items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                    className="inline-flex min-h-[46px] items-center justify-center rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-bold text-slate-300 transition hover:bg-slate-700"
                 >
                     Reset
                 </button>
                 <button
                     onClick={handleSave}
-                    className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-soft transition hover:bg-blue-700"
+                    className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 px-4 py-2 text-sm font-bold text-white shadow-glow transition-all duration-200 hover:from-cyan-300 hover:to-blue-400"
                 >
                     <Save size={16} />
                     Simpan
@@ -246,7 +246,7 @@ const SettingsPage = () => {
             <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-bold text-rose-600 shadow-sm transition hover:bg-rose-100 disabled:opacity-60"
+                className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-sm font-bold text-rose-400 transition hover:bg-rose-500/20 disabled:opacity-60"
             >
                 <LogOut size={16} />
                 {isLoggingOut ? 'Memproses logout...' : 'Logout'}
