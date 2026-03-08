@@ -199,10 +199,6 @@ const ScanPage = () => {
                     <Camera size={14} />
                     QR Scanner
                 </div>
-                <h1 className="m-0 text-2xl font-bold tracking-tight text-white">Scan QR SOP</h1>
-                <p className="mt-2 text-sm text-slate-400">
-                    Arahkan kamera ke QR SOP dari mavi-y untuk membuka manual secara instan.
-                </p>
             </header>
 
 
