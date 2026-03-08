@@ -1,16 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { Camera, Keyboard } from 'lucide-react';
 import { parseManualIdFromQrText } from '../lib/manualApi';
 import { captureScanDetected } from '../lib/captureApi';
 
 const SCANNER_ELEMENT_ID = 'qr-reader';
 const SCAN_CONFIG = {
-    fps: 12,
-    qrbox: { width: 260, height: 260 },
+    fps: 20,
+    qrbox: { width: 300, height: 300 },
     aspectRatio: 1,
     disableFlip: false,
+    formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
     experimentalFeatures: {
         useBarCodeDetectorIfSupported: true
     }
@@ -193,29 +194,29 @@ const ScanPage = () => {
 
     return (
         <div className="space-y-4 pb-4">
-            <header className="rounded-3xl border border-white/15 bg-white/10 p-4 shadow-glass backdrop-blur">
-                <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-yellow-300/20 px-3 py-1 text-xs font-semibold text-yellow-200">
+            <header className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
+                <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">
                     <Camera size={14} />
                     QR Scanner
                 </div>
-                <h1 className="m-0 text-2xl font-bold tracking-tight">Scan QR SOP</h1>
-                <p className="mt-2 text-sm text-slate-300">
+                <h1 className="m-0 text-2xl font-bold tracking-tight text-slate-800">Scan QR SOP</h1>
+                <p className="mt-2 text-sm text-slate-500">
                     Arahkan kamera ke QR SOP dari mavi-y untuk membuka manual secara instan.
                 </p>
             </header>
 
 
-            <div className="relative min-h-[280px] overflow-hidden rounded-3xl border border-white/15 bg-black shadow-glass">
+            <div className="relative min-h-[280px] overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 shadow-soft">
                 <div id={SCANNER_ELEMENT_ID} className="w-full" />
                 {isStarting && (
-                    <div className="absolute inset-0 grid place-items-center bg-slate-950/75 text-sm font-semibold">
+                    <div className="absolute inset-0 grid place-items-center bg-slate-900/80 text-sm font-medium text-white backdrop-blur-sm">
                         Menyalakan kamera...
                     </div>
                 )}
             </div>
 
-            <div className="space-y-3 rounded-3xl border border-white/15 bg-white/10 p-4 shadow-glass">
-                <label htmlFor="manualInput" className="inline-flex items-center gap-2 text-sm font-medium text-slate-200">
+            <div className="space-y-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
+                <label htmlFor="manualInput" className="inline-flex items-center gap-2 text-sm font-medium text-slate-700">
                     <Keyboard size={16} />
                     Fallback manual input (link atau manualId)
                 </label>
@@ -225,19 +226,19 @@ const ScanPage = () => {
                     value={rawValue}
                     onChange={(e) => setRawValue(e.target.value)}
                     placeholder="Contoh: https://domain/#/manual/{id}"
-                    className="min-h-[46px] w-full rounded-xl border border-slate-600 bg-slate-900/70 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-yellow-300 focus:ring-2 focus:ring-yellow-300/25"
+                    className="min-h-[46px] w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                 />
-                <p className="m-0 text-xs leading-relaxed text-slate-300">
+                <p className="m-0 text-xs leading-relaxed text-slate-500">
                     Tip: kamu bisa tempel URL QR lengkap atau UUID manualId.
                 </p>
                 <button
-                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-gradient-to-r from-yellow-300 to-orange-300 px-4 py-2 text-sm font-semibold text-slate-950 transition hover:brightness-105"
+                    className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:bg-blue-700 focus:ring-2 focus:ring-blue-500/50"
                     onClick={handleManualOpen}
                 >
                     🚀 Buka SOP
                 </button>
-                {info ? <div className="rounded-2xl border border-sky-400/35 bg-sky-950/35 p-3 text-sm text-sky-200">{info}</div> : null}
-                {error ? <div className="rounded-2xl border border-rose-400/35 bg-rose-950/40 p-3 text-sm text-rose-200">{error}</div> : null}
+                {info ? <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm text-sky-700">{info}</div> : null}
+                {error ? <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-600">{error}</div> : null}
             </div>
 
         </div>

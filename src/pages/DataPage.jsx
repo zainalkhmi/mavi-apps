@@ -76,25 +76,25 @@ const DataPage = () => {
 
     return (
         <div className="space-y-4 pb-4">
-            <header className="rounded-3xl border border-white/15 bg-white/10 p-4 shadow-glass backdrop-blur">
-                <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-yellow-300/20 px-3 py-1 text-xs font-semibold text-yellow-300">
+            <header className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
+                <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">
                     <Database size={14} />
                     Data Capture
                 </div>
-                <h1 className="m-0 text-2xl font-bold tracking-tight">Data</h1>
-                <p className="mt-2 text-sm text-slate-300">
+                <h1 className="m-0 text-2xl font-bold tracking-tight text-slate-800">Data</h1>
+                <p className="mt-2 text-sm text-slate-500">
                     Menampilkan antrean capture lokal yang belum ter-upload (pending) dari perangkat (IndexedDB).
                 </p>
             </header>
 
-            <section className="grid grid-cols-2 gap-2 rounded-2xl border border-white/15 bg-white/5 p-3 text-center text-xs">
-                <div>
-                    <p className="m-0 inline-flex items-center gap-1 text-slate-300"><Database size={12} /> Total</p>
-                    <p className="m-0 text-base font-semibold text-slate-100">{stats.total}</p>
+            <section className="grid grid-cols-2 gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-center text-xs shadow-soft">
+                <div className="rounded-xl bg-slate-50 p-3">
+                    <p className="m-0 mb-1 inline-flex items-center gap-1 font-medium text-slate-500"><Database size={14} /> Total</p>
+                    <p className="m-0 text-xl font-bold text-slate-800">{stats.total}</p>
                 </div>
-                <div>
-                    <p className="m-0 inline-flex items-center gap-1 text-slate-300"><Clock3 size={12} /> Pending</p>
-                    <p className="m-0 text-base font-semibold text-amber-300">{stats.pending}</p>
+                <div className="rounded-xl bg-amber-50 p-3">
+                    <p className="m-0 mb-1 inline-flex items-center gap-1 font-medium text-amber-600"><Clock3 size={14} /> Pending</p>
+                    <p className="m-0 text-xl font-bold text-amber-600">{stats.pending}</p>
                 </div>
             </section>
 
@@ -102,62 +102,62 @@ const DataPage = () => {
                 <button
                     onClick={loadData}
                     disabled={loading}
-                    className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 text-sm font-medium text-slate-100 disabled:opacity-60"
+                    className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:ring-2 focus:ring-slate-200 disabled:opacity-60"
                 >
-                    <RefreshCcw size={15} className={loading ? 'animate-spin' : ''} />
+                    <RefreshCcw size={16} className={loading ? 'animate-spin' : ''} />
                     {loading ? 'Memuat...' : 'Refresh Data'}
                 </button>
             </div>
 
             {message ? (
-                <div className="rounded-2xl border border-white/20 bg-slate-900/60 p-3 text-sm text-slate-100">{message}</div>
+                <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm font-medium text-blue-700 shadow-sm">{message}</div>
             ) : null}
 
-            <div className="space-y-2">
+            <div className="space-y-3">
                 {rows.map((item) => (
-                    <article key={item.id} className="rounded-2xl border border-white/15 bg-white/5 p-3 shadow-glass">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="m-0 text-sm font-semibold text-yellow-200">{item?.payload?.eventType || '-'}</p>
+                    <article key={item.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                            <p className="m-0 text-sm font-bold text-slate-800">{item?.payload?.eventType || '-'}</p>
                             <div className="flex items-center gap-2">
-                                <span className="rounded-full border border-amber-300/40 bg-amber-500/15 px-2 py-1 text-[10px] font-semibold uppercase text-amber-200">
+                                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
                                     <span className="inline-flex items-center gap-1"><Clock3 size={10} /> pending</span>
                                 </span>
-                                <p className="m-0 text-xs text-slate-300">{formatDateTime(item?.payload?.timestamp || item?.createdAt)}</p>
+                                <p className="m-0 text-xs font-medium text-slate-500">{formatDateTime(item?.payload?.timestamp || item?.createdAt)}</p>
                             </div>
                         </div>
-                        <div className="mt-2 grid grid-cols-1 gap-1 text-xs text-slate-300">
-                            <p className="m-0">manualId: <span className="text-slate-100">{item?.payload?.manualId || '-'}</span></p>
-                            <p className="m-0">manualTitle: <span className="text-slate-100">{item?.payload?.manualTitle || '-'}</span></p>
-                            <p className="m-0">step: <span className="text-slate-100">{Number.isFinite(item?.payload?.stepIndex) ? item.payload.stepIndex : '-'}</span> • <span className="text-slate-100">{item?.payload?.stepTitle || '-'}</span></p>
-                            <p className="m-0">source: <span className="text-slate-100">{item?.payload?.source || '-'}</span></p>
-                            <p className="m-0">operator/device: <span className="text-slate-100">{item?.payload?.operatorName || '-'} / {item?.payload?.deviceLabel || '-'}</span></p>
-                            <p className="m-0">appVersion: <span className="text-slate-100">{item?.payload?.appVersion || '-'}</span></p>
+                        <div className="mt-3 grid grid-cols-1 gap-1.5 text-xs text-slate-500">
+                            <p className="m-0">manualId: <strong className="font-semibold text-slate-700">{item?.payload?.manualId || '-'}</strong></p>
+                            <p className="m-0">manualTitle: <strong className="font-semibold text-slate-700">{item?.payload?.manualTitle || '-'}</strong></p>
+                            <p className="m-0">step: <strong className="font-semibold text-slate-700">{Number.isFinite(item?.payload?.stepIndex) ? item.payload.stepIndex : '-'}</strong> • <span className="font-medium text-slate-700">{item?.payload?.stepTitle || '-'}</span></p>
+                            <p className="m-0">source: <strong className="font-semibold text-slate-700">{item?.payload?.source || '-'}</strong></p>
+                            <p className="m-0">operator/device: <strong className="font-semibold text-slate-700">{item?.payload?.operatorName || '-'} / {item?.payload?.deviceLabel || '-'}</strong></p>
+                            <p className="m-0">appVersion: <strong className="font-semibold text-slate-700">{item?.payload?.appVersion || '-'}</strong></p>
                             {item?.lastError ? (
-                                <p className="m-0 text-amber-200">lastError: <span className="text-amber-100">{item.lastError}</span></p>
+                                <p className="m-0 mt-2 rounded bg-rose-50 p-2 text-rose-600">lastError: <span className="font-medium">{item.lastError}</span></p>
                             ) : null}
                         </div>
                     </article>
                 ))}
             </div>
 
-            <section className="space-y-2 rounded-2xl border border-emerald-300/30 bg-emerald-950/20 p-3">
-                <h2 className="m-0 text-sm font-semibold text-emerald-200">Run Summary (20 terbaru)</h2>
+            <section className="mt-6 space-y-3 rounded-3xl border border-slate-200 bg-slate-50 p-4 shadow-inner">
+                <h2 className="m-0 border-b border-slate-200 pb-2 text-sm font-bold text-slate-800">Run Summary (20 terbaru)</h2>
                 {runMessage ? (
-                    <div className="rounded-xl border border-white/20 bg-slate-900/60 p-3 text-sm text-slate-100">{runMessage}</div>
+                    <div className="rounded-xl border border-sky-200 bg-sky-50 p-3 text-sm font-medium text-sky-700 shadow-sm">{runMessage}</div>
                 ) : null}
 
                 {runRows.map((run) => (
-                    <article key={run.id} className="rounded-2xl border border-white/15 bg-white/5 p-3 shadow-glass">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                            <p className="m-0 text-sm font-semibold text-emerald-200">{run.manual_title || run.manual_id || '-'}</p>
-                            <p className="m-0 text-xs text-slate-300">{run.status || '-'}</p>
+                    <article key={run.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:shadow-md">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                            <p className="m-0 text-sm font-bold text-slate-800">{run.manual_title || run.manual_id || '-'}</p>
+                            <p className="m-0 rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-slate-600">{run.status || '-'}</p>
                         </div>
-                        <div className="mt-2 grid grid-cols-1 gap-1 text-xs text-slate-300">
-                            <p className="m-0">manualId: <span className="text-slate-100">{run.manual_id || '-'}</span></p>
-                            <p className="m-0">version/source: <span className="text-slate-100">{run.manual_version || '-'} / {run.source || '-'}</span></p>
-                            <p className="m-0">operator/device: <span className="text-slate-100">{run.operator_name || '-'} / {run.device_label || '-'}</span></p>
-                            <p className="m-0">started: <span className="text-slate-100">{formatDateTime(run.started_at)}</span></p>
-                            <p className="m-0">completed: <span className="text-slate-100">{formatDateTime(run.completed_at)}</span></p>
+                        <div className="mt-3 grid grid-cols-1 gap-1.5 text-xs text-slate-500">
+                            <p className="m-0">manualId: <strong className="font-semibold text-slate-700">{run.manual_id || '-'}</strong></p>
+                            <p className="m-0">version/source: <strong className="font-semibold text-slate-700">{run.manual_version || '-'} / {run.source || '-'}</strong></p>
+                            <p className="m-0">operator/device: <strong className="font-semibold text-slate-700">{run.operator_name || '-'} / {run.device_label || '-'}</strong></p>
+                            <p className="m-0">started: <span className="font-medium text-slate-600">{formatDateTime(run.started_at)}</span></p>
+                            <p className="m-0">completed: <span className="font-medium text-slate-600">{formatDateTime(run.completed_at)}</span></p>
                         </div>
                     </article>
                 ))}

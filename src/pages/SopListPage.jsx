@@ -58,16 +58,16 @@ const SopListPage = () => {
     const totalText = useMemo(() => `${manuals.length} SOP ditemukan`, [manuals.length]);
 
     return (
-        <div className="space-y-3 pb-4">
-            <header className="px-1 pt-1">
-                <h1 className="m-0 text-2xl font-bold tracking-tight text-slate-100">Daftar SOP</h1>
-                <p className="mt-1 text-sm leading-5 text-slate-300">
+        <div className="space-y-4 pb-4">
+            <header className="px-2 pt-2">
+                <h1 className="m-0 text-2xl font-bold tracking-tight text-slate-800">Daftar SOP</h1>
+                <p className="mt-1 text-sm leading-5 text-slate-500">
                     Hanya SOP dengan status PUBLISHED yang ditampilkan.
                 </p>
             </header>
 
-            <div className="space-y-1 rounded-2xl border border-[#1e3965] bg-[#0a1f43]/75 p-3">
-                <label htmlFor="searchSop" className="text-sm font-medium text-slate-200">
+            <div className="space-y-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft">
+                <label htmlFor="searchSop" className="text-sm font-medium text-slate-700">
                     Cari judul / nomor dokumen
                 </label>
                 <input
@@ -76,9 +76,9 @@ const SopListPage = () => {
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Contoh: Assembly / WI-001"
-                    className="min-h-[38px] w-full rounded-lg border border-[#2a4b7e] bg-[#081734] px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-[#4f78b7]"
+                    className="min-h-[46px] w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
                 />
-                <small className="text-xs text-slate-400">{totalText}</small>
+                <small className="mt-1 block text-xs font-medium text-slate-400">{totalText}</small>
             </div>
 
             {isLoading ? (
@@ -98,28 +98,28 @@ const SopListPage = () => {
             {error ? <div className="rounded-xl border border-rose-400/35 bg-rose-950/40 p-3 text-sm text-rose-200">{error}</div> : null}
 
             {!isLoading && !error ? (
-                <div className="grid gap-2">
+                <div className="grid gap-3">
                     {manuals.map((manual) => (
                         <Link
                             key={manual.id}
-                            className="relative min-h-[148px] rounded-2xl border border-[#1f3e6b] bg-[#081a3a] p-3 transition hover:bg-[#0a2147]"
+                            className="relative min-h-[140px] rounded-2xl border border-slate-200 bg-white p-4 shadow-soft transition hover:border-blue-300 hover:shadow-md"
                             to={`/sop/${encodeURIComponent(manual.id)}`}
                         >
                             <div className="min-w-0 pr-14">
-                                <strong className="block truncate text-2xl font-bold leading-7 text-slate-100">
+                                <strong className="block truncate text-xl font-bold leading-tight text-slate-800">
                                     {manual.title || 'Untitled SOP'}
                                 </strong>
-                                <p className="mt-1 text-base text-slate-300">{manual.summary || 'Tanpa ringkasan'}</p>
+                                <p className="mt-1 line-clamp-2 text-sm text-slate-500">{manual.summary || 'Tanpa ringkasan'}</p>
                             </div>
 
-                            <span className="absolute bottom-3 right-3 text-sm text-slate-300">
+                            <span className="absolute bottom-4 right-4 inline-flex items-center rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500">
                                 v{manual.version || '1.0'}
                             </span>
                         </Link>
                     ))}
 
                     {!manuals.length ? (
-                        <div className="rounded-2xl border border-[#1f3e6b] bg-[#081a3a] p-3 text-sm text-slate-300">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-center text-sm font-medium text-slate-500 shadow-inner">
                             Tidak ada SOP published yang cocok dengan pencarian.
                         </div>
                     ) : null}

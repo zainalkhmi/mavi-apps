@@ -279,50 +279,50 @@ const SopViewerPage = () => {
 
     return (
         <div className="space-y-4 pb-4">
-            <header className="rounded-3xl border border-white/15 bg-white/10 p-4 shadow-glass backdrop-blur">
-                <h1 className="m-0 line-clamp-2 text-xl font-bold tracking-tight">{manual?.title || 'SOP Viewer'}</h1>
-                <p className="mt-2 text-sm text-slate-300">{manual?.documentNumber || '-'} • v{manual?.version || '1.0'}</p>
+            <header className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
+                <h1 className="m-0 line-clamp-2 text-xl font-bold tracking-tight text-slate-800">{manual?.title || 'SOP Viewer'}</h1>
+                <p className="mt-2 text-sm text-slate-500">{manual?.documentNumber || '-'} • v{manual?.version || '1.0'}</p>
             </header>
 
             {isLoading ? (
-                <div className="rounded-2xl border border-sky-400/35 bg-sky-950/35 p-3 text-sm text-sky-200">
+                <div className="rounded-2xl border border-blue-200 bg-blue-50 p-4 text-sm text-blue-800 shadow-soft">
                     <div className="flex items-center justify-between gap-2">
-                        <span>Memuat SOP dari server...</span>
-                        <span className="text-xs font-semibold text-sky-100">{Math.round(loadingProgress)}%</span>
+                        <span className="font-medium">Memuat SOP dari server...</span>
+                        <span className="text-xs font-bold text-blue-600">{Math.round(loadingProgress)}%</span>
                     </div>
-                    <div className="mt-2 h-2 overflow-hidden rounded-full bg-sky-900/70">
+                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-blue-100">
                         <div
-                            className="h-full rounded-full bg-gradient-to-r from-sky-300 to-cyan-300 transition-[width] duration-200"
+                            className="h-full rounded-full bg-blue-500 transition-[width] duration-200"
                             style={{ width: `${loadingProgress}%` }}
                         />
                     </div>
                 </div>
             ) : null}
-            {!isLoading && error ? <div className="rounded-2xl border border-rose-400/35 bg-rose-950/40 p-3 text-sm text-rose-200">{error}</div> : null}
+            {!isLoading && error ? <div className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700 shadow-soft">{error}</div> : null}
 
             {!isLoading && !error ? (
                 <>
-                    <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-                        <div className="h-full rounded-full bg-gradient-to-r from-yellow-300 to-orange-300" style={{ width: `${progress}%` }} />
+                    <div className="h-2 overflow-hidden rounded-full bg-slate-200 shadow-inner">
+                        <div className="h-full rounded-full bg-blue-500 transition-[width] duration-300" style={{ width: `${progress}%` }} />
                     </div>
 
-                    <section className="min-h-[260px] overflow-hidden rounded-3xl border border-white/15 bg-black shadow-glass">
+                    <section className="min-h-[260px] overflow-hidden rounded-3xl border border-slate-200 bg-slate-900 shadow-soft">
                         {renderMedia()}
                     </section>
 
-                    <section className="space-y-2 rounded-3xl border border-white/15 bg-white/10 p-4 shadow-glass">
-                        <div className="text-xs text-slate-300">Step {Math.min(currentStepIndex + 1, Math.max(steps.length, 1))} / {Math.max(steps.length, 1)} • {progress}%</div>
-                        <h3 className="m-0 text-base font-semibold text-slate-100">{currentStep?.title || 'Untitled Step'}</h3>
+                    <section className="space-y-2 rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
+                        <div className="text-xs font-medium text-slate-500">Step {Math.min(currentStepIndex + 1, Math.max(steps.length, 1))} / {Math.max(steps.length, 1)} • {progress}%</div>
+                        <h3 className="m-0 text-lg font-bold text-slate-800">{currentStep?.title || 'Untitled Step'}</h3>
                         <div
-                            className="prose prose-invert prose-sm max-w-none text-slate-200"
+                            className="prose prose-sm max-w-none text-slate-600 prose-headings:text-slate-800 prose-a:text-blue-600 prose-strong:text-slate-800"
                             dangerouslySetInnerHTML={{ __html: currentStep?.instructions || '<p>No instruction available.</p>' }}
                         />
                     </section>
 
-                    <section className="space-y-3 rounded-3xl border border-emerald-300/30 bg-emerald-950/20 p-4 shadow-glass">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                            <h3 className="m-0 text-base font-semibold text-emerald-200">Execute SOP</h3>
-                            <span className="text-xs text-emerald-100/90">
+                    <section className="space-y-4 rounded-3xl border border-emerald-100 bg-emerald-50 p-5 shadow-soft">
+                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-100 pb-2">
+                            <h3 className="m-0 text-base font-bold text-emerald-800">Execute SOP</h3>
+                            <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700">
                                 {activeRun ? `Run: ${activeRun.status}` : 'Run belum dimulai'}
                             </span>
                         </div>
@@ -331,90 +331,103 @@ const SopViewerPage = () => {
                             <button
                                 onClick={handleStartExecution}
                                 disabled={isStartingRun}
-                                className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-gradient-to-r from-emerald-300 to-lime-300 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-70"
+                                className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:bg-emerald-700 disabled:opacity-70"
                             >
                                 {isStartingRun ? 'Memulai run...' : 'Mulai Eksekusi SOP'}
                             </button>
                         ) : (
-                            <>
-                                <label className="flex items-center gap-2 text-sm text-slate-100">
+                            <div className="space-y-3">
+                                <label className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-white p-3 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-emerald-50">
                                     <input
                                         type="checkbox"
+                                        className="h-5 w-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                                         checked={Boolean(currentStepForm.isChecked)}
                                         onChange={(event) => updateCurrentStepForm('isChecked', event.target.checked)}
                                     />
-                                    Step ini sudah dikerjakan
+                                    <span>Step ini sudah dikerjakan</span>
                                 </label>
 
-                                <div className="grid grid-cols-2 gap-2">
-                                    <input
-                                        type="number"
-                                        value={currentStepForm.inputNumber}
-                                        onChange={(event) => updateCurrentStepForm('inputNumber', event.target.value)}
-                                        placeholder="Input angka"
-                                        className="min-h-[42px] rounded-xl border border-slate-600 bg-slate-900/70 px-3 py-2 text-sm text-slate-100 outline-none focus:border-emerald-300"
-                                    />
-                                    <select
-                                        value={currentStepForm.resultStatus}
-                                        onChange={(event) => updateCurrentStepForm('resultStatus', event.target.value)}
-                                        className="min-h-[42px] rounded-xl border border-slate-600 bg-slate-900/70 px-3 py-2 text-sm text-slate-100 outline-none focus:border-emerald-300"
-                                    >
-                                        <option value="na">N/A</option>
-                                        <option value="pass">Pass</option>
-                                        <option value="fail">Fail</option>
-                                    </select>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-semibold text-emerald-800">Hasil Pengukuran</label>
+                                        <input
+                                            type="number"
+                                            value={currentStepForm.inputNumber}
+                                            onChange={(event) => updateCurrentStepForm('inputNumber', event.target.value)}
+                                            placeholder="Input angka"
+                                            className="min-h-[42px] w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                                        />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-semibold text-emerald-800">Status</label>
+                                        <select
+                                            value={currentStepForm.resultStatus}
+                                            onChange={(event) => updateCurrentStepForm('resultStatus', event.target.value)}
+                                            className="min-h-[42px] w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                                        >
+                                            <option value="na">N/A</option>
+                                            <option value="pass">Pass (Lulus)</option>
+                                            <option value="fail">Fail (Gagal)</option>
+                                        </select>
+                                    </div>
                                 </div>
 
-                                <textarea
-                                    value={currentStepForm.noteText}
-                                    onChange={(event) => updateCurrentStepForm('noteText', event.target.value)}
-                                    placeholder="Catatan step (opsional)"
-                                    rows={3}
-                                    className="w-full rounded-xl border border-slate-600 bg-slate-900/70 px-3 py-2 text-sm text-slate-100 outline-none focus:border-emerald-300"
-                                />
+                                <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-emerald-800">Catatan (Opsional)</label>
+                                    <textarea
+                                        value={currentStepForm.noteText}
+                                        onChange={(event) => updateCurrentStepForm('noteText', event.target.value)}
+                                        placeholder="Tambahkan catatan khusus..."
+                                        rows={2}
+                                        className="w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                                    />
+                                </div>
 
-                                <input
-                                    type="text"
-                                    value={currentStepForm.evidenceImageUrl}
-                                    onChange={(event) => updateCurrentStepForm('evidenceImageUrl', event.target.value)}
-                                    placeholder="URL foto bukti (opsional)"
-                                    className="min-h-[42px] w-full rounded-xl border border-slate-600 bg-slate-900/70 px-3 py-2 text-sm text-slate-100 outline-none focus:border-emerald-300"
-                                />
+                                <div className="space-y-1">
+                                    <label className="text-xs font-semibold text-emerald-800">Bukti Foto (Opsional)</label>
+                                    <input
+                                        type="text"
+                                        value={currentStepForm.evidenceImageUrl}
+                                        onChange={(event) => updateCurrentStepForm('evidenceImageUrl', event.target.value)}
+                                        placeholder="URL foto bukti..."
+                                        className="min-h-[42px] w-full rounded-xl border border-emerald-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none transition focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+                                    />
+                                </div>
 
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-2 gap-3 pt-2">
                                     <button
                                         onClick={handleSaveCurrentStep}
                                         disabled={isSavingStep}
-                                        className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-emerald-200/30 bg-emerald-500/20 px-4 py-2 text-sm font-semibold text-emerald-100 disabled:opacity-70"
+                                        className="inline-flex min-h-[44px] items-center justify-center rounded-xl border border-emerald-300 bg-white px-4 py-2 text-sm font-bold text-emerald-700 shadow-sm transition hover:bg-emerald-50 disabled:opacity-70"
                                     >
                                         {isSavingStep ? 'Menyimpan...' : 'Simpan Step'}
                                     </button>
                                     <button
                                         onClick={handleCompleteRun}
                                         disabled={isCompletingRun || !allStepsChecked || activeRun?.status === 'completed'}
-                                        className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-gradient-to-r from-emerald-300 to-lime-300 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-60"
+                                        className="inline-flex min-h-[44px] items-center justify-center rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-soft transition hover:bg-emerald-700 disabled:opacity-60"
                                     >
                                         {isCompletingRun ? 'Menyelesaikan...' : 'Selesaikan Run'}
                                     </button>
                                 </div>
 
-                                <p className="m-0 text-xs text-slate-300">
-                                    Checklist progres run: {steps.filter((_, index) => stepForms[index]?.isChecked).length}/{steps.length}
+                                <p className="m-0 text-center text-xs font-medium text-emerald-700/80">
+                                    Progres: {steps.filter((_, index) => stepForms[index]?.isChecked).length} dari {steps.length} step selesai
                                 </p>
-                            </>
+                            </div>
                         )}
 
                         {executionError ? (
-                            <div className="rounded-2xl border border-rose-400/35 bg-rose-950/40 p-3 text-sm text-rose-200">{executionError}</div>
+                            <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm font-medium text-rose-700 shadow-sm">{executionError}</div>
                         ) : null}
                         {executionMessage ? (
-                            <div className="rounded-2xl border border-emerald-300/35 bg-emerald-950/40 p-3 text-sm text-emerald-200">{executionMessage}</div>
+                            <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-700 shadow-sm">{executionMessage}</div>
                         ) : null}
                     </section>
 
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-2 gap-3">
                         <button
-                            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 disabled:opacity-50"
+                            className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-soft transition hover:bg-slate-50 disabled:opacity-50"
                             disabled={currentStepIndex <= 0}
                             onClick={() => setCurrentStepIndex((prev) => Math.max(prev - 1, 0))}
                         >
@@ -422,7 +435,7 @@ const SopViewerPage = () => {
                             Back
                         </button>
                         <button
-                            className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-yellow-300 to-orange-300 px-4 py-2 text-sm font-semibold text-slate-950 disabled:opacity-50"
+                            className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-soft transition hover:bg-blue-700 disabled:opacity-50"
                             disabled={currentStepIndex >= steps.length - 1}
                             onClick={() => setCurrentStepIndex((prev) => Math.min(prev + 1, Math.max(steps.length - 1, 0)))}
                         >
@@ -433,19 +446,19 @@ const SopViewerPage = () => {
                 </>
             ) : null}
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3 pt-2">
                 <Link
                     to="/"
-                    className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 text-sm font-medium text-slate-200"
+                    className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-soft transition hover:bg-slate-50 hover:text-blue-600"
                 >
-                    <House size={15} />
+                    <House size={16} />
                     Home
                 </Link>
                 <Link
                     to="/sop"
-                    className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/5 px-3 text-sm font-medium text-slate-200"
+                    className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-soft transition hover:bg-slate-50 hover:text-blue-600"
                 >
-                    <ListChecks size={15} />
+                    <ListChecks size={16} />
                     List SOP
                 </Link>
             </div>
